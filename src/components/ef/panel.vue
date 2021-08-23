@@ -4,8 +4,8 @@
             <!--顶部工具菜单-->
             <el-col :span="24">
                 <div class="ef-tooltar">
-                    <el-link type="primary" :underline="false">{{data.name}}</el-link>
-                    <el-divider direction="vertical"></el-divider>
+                    <!--<el-link type="primary" :underline="false">{{data.name}}</el-link>-->
+                    <!--<el-divider direction="vertical"></el-divider>-->
                     <el-button type="text" icon="el-icon-delete" size="large" @click="deleteElement" :disabled="!this.activeElement.type"></el-button>
                     <el-divider direction="vertical"></el-divider>
                     <el-button type="text" icon="el-icon-download" size="large" @click="downloadData"></el-button>
@@ -15,11 +15,13 @@
                     <el-button type="text" icon="el-icon-minus" size="large" @click="zoomSub"></el-button>
                     <div style="float: right;margin-right: 5px">
                         <el-button type="info" plain round icon="el-icon-document" @click="dataInfo" size="mini">流程信息</el-button>
-                        <el-button type="primary" plain round @click="dataReloadA" icon="el-icon-refresh" size="mini">切换流程A</el-button>
-                        <el-button type="primary" plain round @click="dataReloadB" icon="el-icon-refresh" size="mini">切换流程B</el-button>
-                        <el-button type="primary" plain round @click="dataReloadC" icon="el-icon-refresh" size="mini">切换流程C</el-button>
-                        <el-button type="primary" plain round @click="dataReloadD" icon="el-icon-refresh" size="mini">自定义样式</el-button>
-                        <el-button type="primary" plain round @click="dataReloadE" icon="el-icon-refresh" size="mini">力导图</el-button>
+                        <el-button type="primary" plain round @click="dataReloadC" icon="el-icon-refresh" size="mini">新建流程</el-button>
+                        <!--<el-button type="primary" plain round @click="dataReloadA" icon="el-icon-refresh" size="mini">切换流程A</el-button>-->
+                        <el-button type="primary" plain round @click="dataReloadB" icon="el-icon-refresh" size="mini">切换流程C</el-button>
+                        <!--<el-button type="primary" plain round @click="dataReloadD" icon="el-icon-refresh" size="mini">自定义样式</el-button>-->
+                        <!--<el-button type="primary" plain round @click="dataReloadE" icon="el-icon-refresh" size="mini">力导图</el-button>-->
+                        <el-button type="primary" plain round icon="el-icon-edit" @click="saveFlow" size="mini">保存</el-button>
+                        <el-button type="primary" plain round icon="el-icon-video-play" @click="runFlow" size="mini">执行</el-button>
                         <el-button type="info" plain round icon="el-icon-document" @click="openHelp" size="mini">帮助</el-button>
                     </div>
                 </div>
@@ -29,7 +31,7 @@
             <div style="width: 230px;border-right: 1px solid #dce3e8;">
                 <node-menu @addNode="addNode" ref="nodeMenu"></node-menu>
             </div>
-            <div id="efContainer" ref="efContainer" class="container" v-flowDrag>
+            <div id="efContainer" ref="efContainer" class="container" v-flowDrag v-on:click.self="clickContainer">
                 <template v-for="node in data.nodeList">
                     <flow-node
                             :id="node.id"
@@ -47,13 +49,30 @@
             </div>
             <!-- 右侧表单 -->
             <div style="width: 300px;border-left: 1px solid #dce3e8;background-color: #FBFBFB">
-                <flow-node-form ref="nodeForm" @setLineLabel="setLineLabel" @repaintEverything="repaintEverything"></flow-node-form>
+              <el-tabs v-model="activeName" type="card">
+                <el-tab-pane label="节点属性" name="node">
+                  <flow-node-form ref="nodeForm" @setContainerValues="setContainerValues" @setLineLabel="setLineLabel" @repaintEverything="repaintEverything"></flow-node-form>
+                </el-tab-pane>
+                <el-tab-pane label="控制台输出" name="console">
+                  <div class="ef-node-form" style="height: 200px;overflow-y: scroll">
+                    <div class="ef-node-form-header">
+                      控制台输出
+                    </div>
+                    <div class="ef-node-form-body">
+                      <div id="console" style="white-space: pre-line">
+                        {{dialogOutput}}
+                      </div>
+                    </div>
+                  </div>
+                </el-tab-pane>
+              </el-tabs>
             </div>
         </div>
         <!-- 流程数据详情 -->
         <flow-info v-if="flowInfoVisible" ref="flowInfo" :data="data"></flow-info>
         <flow-help v-if="flowHelpVisible" ref="flowHelp"></flow-help>
-    </div>
+
+      </div>
 
 </template>
 
@@ -74,13 +93,19 @@
     import { getDataC } from './data_C'
     import { getDataD } from './data_D'
     import { getDataE } from './data_E'
+    import { Loading } from 'element-ui';
     import { ForceDirected } from './force-directed'
+    import { getFlowTypes } from './types'
+    import { cloneDeep } from 'lodash'
+
 
     export default {
         data() {
             return {
                 // jsPlumb 实例
                 jsPlumb: null,
+                activeName: 'node',
+                dialogOutput: '',
                 // 控制画布销毁
                 easyFlowVisible: true,
                 // 控制流程数据显示与隐藏
@@ -212,10 +237,10 @@
                             this.$message.error('该关系已存在,不允许重复创建')
                             return false
                         }
-                        if (this.hashOppositeLine(from, to)) {
-                            this.$message.error('不支持两个节点之间连线回环');
-                            return false
-                        }
+                        // if (this.hashOppositeLine(from, to)) {
+                        //     this.$message.error('不支持两个节点之间连线回环');
+                        //     return false
+                        // }
                         this.$message.success('连接成功')
                         return true
                     })
@@ -262,6 +287,11 @@
                 this.$nextTick(function () {
                     this.loadEasyFlowFinish = true
                 })
+            },
+            setContainerValues(container,attrs) {
+                for (var attr in attrs){
+                    this.data[attrs[attr]] = container[attrs[attr]]
+                }
             },
             // 设置连线条件
             setLineLabel(from, to, label) {
@@ -375,7 +405,13 @@
                     left: left + 'px',
                     top: top + 'px',
                     ico: nodeMenu.ico,
-                    state: 'success'
+                    state: ''
+                }
+                let types = getFlowTypes()[node.type]
+                for (var i in types){
+                    if (types[i].type === 'array'){
+                        node[i] = cloneDeep(types[i]['default'])
+                    }
                 }
                 /**
                  * 这里可以进行业务判断、是否能够添加该节点
@@ -423,9 +459,16 @@
                 return true
             },
             clickNode(nodeId) {
+                this.activeName = 'node'
                 this.activeElement.type = 'node'
                 this.activeElement.nodeId = nodeId
                 this.$refs.nodeForm.nodeInit(this.data, nodeId)
+            },
+            clickContainer(containerId) {
+                this.activeName = 'node'
+                this.activeElement.type = 'container'
+                // this.activeElement.nodeId = null
+                this.$refs.nodeForm.containerInit(this.data)
             },
             // 是否具有该线
             hasLine(from, to) {
@@ -539,6 +582,41 @@
                 this.flowHelpVisible = true
                 this.$nextTick(function () {
                     this.$refs.flowHelp.init()
+                })
+            },
+            saveFlow() {
+                this.$axios.post('/flow/save', {
+                    id: this.data.id,
+                    name: this.data.name,
+                    module: 'default',
+                    path: this.data.path,
+                    content: JSON.stringify(this.data),
+                }).then(res => {
+                    console.log(res)
+                    if (res.data.data.id){
+                        this.data.id = res.data.data.id
+                    }
+                    this.$notify({
+                        title: '成功',
+                        message: '保存成功',
+                        type: 'success'
+                    })
+                })
+            },
+            runFlow() {
+                this.dialogVisible = true
+                this.activeName = 'console'
+                this.dialogOutput = ''
+                let loadingInstance = Loading.service({});
+                this.$axios.post('/flow/run', {
+                    id: this.data.id,
+                    name: this.data.name,
+                    module: 'default',
+                    content: JSON.stringify(this.data),
+                }).then(res => {
+                    this.dialogOutput = res.data.data
+                }).finally(()=>{
+                    loadingInstance.close()
                 })
             }
         }
