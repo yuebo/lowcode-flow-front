@@ -48,6 +48,18 @@ let types = {
             'type': 'array',
             'default': []
         }
+    },
+    'loop': {
+        'exp': {
+            'label': '表达式',
+            'type': 'string',
+            'default': ''
+        },
+        'var': {
+            'label': '循环变量名称',
+            'type': 'string',
+            'default': '$item'
+        }
     }
 }
 export function getFlowTypes() {

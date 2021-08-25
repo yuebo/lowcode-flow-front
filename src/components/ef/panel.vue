@@ -16,9 +16,10 @@
                     <div style="float: right;margin-right: 5px">
                         <el-button type="info" plain round icon="el-icon-document" @click="dataInfo" size="mini">流程信息</el-button>
                         <el-button type="primary" plain round @click="dataReloadC" icon="el-icon-refresh" size="mini">新建流程</el-button>
-                        <!--<el-button type="primary" plain round @click="dataReloadA" icon="el-icon-refresh" size="mini">切换流程A</el-button>-->
+                      <el-button type="primary" plain round @click="dataReloadD" icon="el-icon-refresh" size="mini">切换流程D</el-button>
+
+                      <el-button type="primary" plain round @click="dataReloadA" icon="el-icon-refresh" size="mini">切换流程A</el-button>
                         <el-button type="primary" plain round @click="dataReloadB" icon="el-icon-refresh" size="mini">切换流程C</el-button>
-                        <!--<el-button type="primary" plain round @click="dataReloadD" icon="el-icon-refresh" size="mini">自定义样式</el-button>-->
                         <!--<el-button type="primary" plain round @click="dataReloadE" icon="el-icon-refresh" size="mini">力导图</el-button>-->
                         <el-button type="primary" plain round icon="el-icon-edit" @click="saveFlow" size="mini">保存</el-button>
                         <el-button type="primary" plain round icon="el-icon-video-play" @click="runFlow" size="mini">执行</el-button>
@@ -410,6 +411,8 @@
                 let types = getFlowTypes()[node.type]
                 for (var i in types){
                     if (types[i].type === 'array'){
+                        node[i] = cloneDeep(types[i]['default'])
+                    } else {
                         node[i] = cloneDeep(types[i]['default'])
                     }
                 }

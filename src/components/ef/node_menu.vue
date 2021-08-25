@@ -81,6 +81,14 @@
                                 ico: 'el-icon-document',
                                 // 自定义覆盖样式
                                 style: {}
+                            },
+                            {
+                                id: '16',
+                                type: 'loop',
+                                name: '逻辑循环',
+                                ico: 'el-icon-document',
+                                // 自定义覆盖样式
+                                style: {}
                             }
                         ]
                     }
